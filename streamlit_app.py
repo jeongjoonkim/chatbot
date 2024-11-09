@@ -146,7 +146,33 @@ if st.session_state.get('api_key_configured', False):
         cols = st.columns(2)
         for idx, question in enumerate(example_questions):
             if cols[idx % 2].button(question):
+                # 사용자 메시지 추가
                 st.session_state.messages.append({"role": "user", "content": question})
+                
+                # 이순신 응답 생성
+                lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", question)
+                if lee_response:
+                    st.session_state.messages.append({"role": "이순신", "content": lee_response})
+                    
+                    # 히데요시 개입 (30% 확률)
+                    if random.random() < hideyoshi_rate:
+                        hideyoshi_response = generate_response_with_retry(
+                            toyotomi_hideyoshi_persona,
+                            "히데요시",
+                            f"이순신의 말: {lee_response}\n사용자의 말: {question}"
+                        )
+                        if hideyoshi_response:
+                            st.session_state.messages.append({"role": "히데요시", "content": hideyoshi_response})
+                            
+                            # 이순신의 대응
+                            lee_final_response = generate_response_with_retry(
+                                lee_sun_shin_persona,
+                                "이순신",
+                                f"히데요시가 말하길: {hideyoshi_response}"
+                            )
+                            if lee_final_response:
+                                st.session_state.messages.append({"role": "이순신", "content": lee_final_response})
+                
                 st.rerun()
 
     # 채팅 히스토리 표시
