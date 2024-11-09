@@ -108,7 +108,7 @@ if not st.session_state.api_key_configured:
                 st.session_state.api_key = api_key
                 st.session_state.api_key_configured = True
                 st.success("API 키가 성공적으로 설정되었습니다!")
-                st.experimental_rerun()
+                st.rerun()
             except Exception as e:
                 st.error(f"API 키 설정 중 오류가 발생했습니다: {str(e)}")
         else:
@@ -169,4 +169,4 @@ if st.session_state.get('api_key_configured', False):
     if st.sidebar.button("API 키 재설정"):
         st.session_state.api_key_configured = False
         st.session_state.messages = []
-        st.experimental_rerun()
+        st.rerun()
