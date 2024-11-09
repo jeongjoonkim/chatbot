@@ -4,7 +4,7 @@ import random
 import time
 
 hideyoshi_rate = 0.3  # 히데요시가 끼어드는 비율
-response_length = 150  # 응답 길이. 200이 넘어가면 말이 너무 길어짐
+response_length = 300  # 기본 응답 길이
 
 # 이순신 장군 페르소나
 lee_sun_shin_persona = """
@@ -102,7 +102,7 @@ if st.session_state.get('api_key_configured', False):
     st.sidebar.markdown("[Google AI Studio에서 API 키 생성하기](https://aistudio.google.com/apikey)")
 
     # 응답 길이 설정 및 샘플 질문 버튼을 사이드바에 추가
-    response_length = st.sidebar.radio("응답 길이를 선택하세요:", ("짧은 대답 (50자)", "보통 대답 (150자)", "긴 대답 (300자)"))
+    response_length = st.sidebar.radio("응답 길이를 선택하세요:", ("짧은 대답 (200자)", "보통 대답 (300자)", "긴 대답 (400자)"))
 
     st.sidebar.write("샘플 질문:")
     example_questions = [
@@ -116,10 +116,10 @@ if st.session_state.get('api_key_configured', False):
 
     # 응답 길이에 따른 최대 글자 수 설정
     max_length = {
-        "짧은 대답 (50자)": 50,
-        "보통 대답 (150자)": 150,
-        "긴 대답 (300자)": 300
-    }.get(response_length, 150)  # 기본값은 150자로 설정
+        "짧은 대답 (200자)": 200,
+        "보통 대답 (300자)": 300,
+        "긴 대답 (400자)": 400
+    }.get(response_length, 300)  # 기본값은 300자로 설정
 
     def generate_response(persona, character_name, user_input):
         try:
@@ -135,7 +135,21 @@ if st.session_state.get('api_key_configured', False):
             response = st.session_state.chat_bot.send_message(prompt, stream=False)
             
             if response.text:
-                return response.text[:max_length]  # max_length에 따라 응답 길이 조정
+                # 응답이 max_length를 초과하면 잘라내고 마지막 문장 구분자 찾기
+                if len(response.text) > max_length:
+                    truncated_response = response.text[:max_length]
+                    last_period = truncated_response.rfind('.')
+                    last_question = truncated_response.rfind('?')
+                    last_exclamation = truncated_response.rfind('!')
+
+                    # 마지막 문장 구분자 중 가장 큰 인덱스 찾기
+                    last_index = max(last_period, last_question, last_exclamation)
+
+                    # 마지막 문장 구분자가 없으면 max_length로 잘라내기
+                    if last_index == -1:
+                        return truncated_response  # 문장 구분자가 없으면 그냥 잘라냄
+                    return response.text[:last_index + 1]  # 문장 구분자까지 포함하여 반환
+                return response.text
             return None
 
         except Exception as e:
