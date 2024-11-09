@@ -4,7 +4,7 @@ import random
 import time
 
 # API 키 설정 - .env 파일이나 Streamlit Secrets로 관리하는 것을 추천합니다
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]  # Streamlit Cloud에서 설정
+GOOGLE_API_KEY = st.secrets["AIzaSyBwSl1Uf7TGglzOqEwX2t5hX0wFBurNCA4"]  # Streamlit Cloud에서 설정
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # ... 페르소나 정의는 동일하게 유지 ...
