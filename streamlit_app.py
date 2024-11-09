@@ -1,56 +1,61 @@
 import streamlit as st
-from openai import OpenAI
+import google.generativeai as genai
+import random
+import time
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
+# API 키 설정 - .env 파일이나 Streamlit Secrets로 관리하는 것을 추천합니다
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]  # Streamlit Cloud에서 설정
+genai.configure(api_key=GOOGLE_API_KEY)
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+# ... 페르소나 정의는 동일하게 유지 ...
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+# 세션 상태 초기화
+if 'chat_bot' not in st.session_state:
+    st.session_state.chat_bot = genai.GenerativeModel('gemini-1.5-pro', safety_settings=safety_settings).start_chat(history=[])
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+st.title('이순신 장군 챗봇')
+st.write('이순신 장군과 대화를 나누어보세요. 가끔 도요토미 히데요시가 끼어들 수 있습니다.')
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+# 채팅 히스토리 표시
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+# 사용자 입력
+if prompt := st.chat_input("메시지를 입력하세요"):
+    # 사용자 메시지 표시
+    with st.chat_message("user"):
+        st.write(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    # 이순신 응답
+    with st.chat_message("이순신"):
+        lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", prompt)
+        if lee_response:
+            st.write(lee_response)
+            st.session_state.messages.append({"role": "이순신", "content": lee_response})
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+    # 히데요시 개입 (50% 확률)
+    if random.random() < 0.49:
+        with st.chat_message("히데요시"):
+            hideyoshi_response = generate_response_with_retry(
+                toyotomi_hideyoshi_persona,
+                "히데요시",
+                f"이순신의 말: {lee_response}\n사용자의 말: {prompt}"
+            )
+            if hideyoshi_response:
+                st.write(hideyoshi_response)
+                st.session_state.messages.append({"role": "히데요시", "content": hideyoshi_response})
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # 이순신의 대응
+        with st.chat_message("이순신"):
+            lee_final_response = generate_response_with_retry(
+                lee_sun_shin_persona,
+                "이순신",
+                f"히데요시가 말하길: {hideyoshi_response}"
+            )
+            if lee_final_response:
+                st.write(lee_final_response)
+                st.session_state.messages.append({"role": "이순신", "content": lee_final_response})
