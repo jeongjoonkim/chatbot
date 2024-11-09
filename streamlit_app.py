@@ -68,17 +68,16 @@ def generate_response(persona, character_name, user_input):
         prompt = f"""
         {persona}
         
-        반드시 {max_length}자 이내로 답변해주세요.
-        
         사용자: {user_input}
         
         {character_name}으로서 응답:
         """
-        response = st.session_state.chat_bot.send_message(prompt, stream=False)
+        
+        # 응답 길이를 설정하는 부분 추가
+        response = st.session_state.chat_bot.send_message(prompt, stream=False, max_length=max_length)
         
         if response.text:
-            # 응답 길이 제한
-            return response.text[:max_length]
+            return response.text
         return None
 
     except Exception as e:
