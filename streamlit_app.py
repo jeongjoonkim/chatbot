@@ -170,3 +170,6 @@ if st.session_state.get('api_key_configured', False):
         st.session_state.api_key_configured = False
         st.session_state.messages = []
         st.rerun()
+
+ # API 키 생성 링크 추가
+    st.sidebar.markdown("[Google AI Studio에서 API 키 생성하기](https://aistudio.google.com/apikey)")
