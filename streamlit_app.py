@@ -70,6 +70,25 @@ with col2:
         "명량해전에서 12척의 배로 승리하실 수 있었던 비결이 무엇인가요?"
     ]
     
+    # generate_response_with_retry 함수 정의가 이곳에 있어야 합니다.
+    def generate_response_with_retry(persona, character_name, user_input, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                response = generate_response(persona, character_name, user_input)
+                if response is not None:
+                    return response
+            except Exception as e:
+                st.error(f"오류 발생: {str(e)}")
+                if "429" in str(e):  # API 할당량 초과 에러
+                    wait_time = (attempt + 1) * 5  # 점진적으로 대기 시간 증가
+                    st.warning(f"{wait_time}초 후 재시도합니다... ({attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                else:
+                    if attempt < max_retries - 1:
+                        st.warning(f"재시도 중... ({attempt + 1}/{max_retries})")
+                        time.sleep(2)
+        return None
+
     for idx, question in enumerate(example_questions):
         if st.button(question, key=f"question_{idx}"):  # 고유한 키 추가
             # 사용자 메시지 추가
@@ -108,24 +127,6 @@ def generate_response(persona, character_name, user_input):
     except Exception as e:
         st.error(f"오류 발생: {str(e)}")
         return None
-
-def generate_response_with_retry(persona, character_name, user_input, max_retries=3):
-    for attempt in range(max_retries):
-        try:
-            response = generate_response(persona, character_name, user_input)
-            if response is not None:
-                return response
-        except Exception as e:
-            st.error(f"오류 발생: {str(e)}")
-            if "429" in str(e):  # API 할당량 초과 에러
-                wait_time = (attempt + 1) * 5  # 점진적으로 대기 시간 증가
-                st.warning(f"{wait_time}초 후 재시도합니다... ({attempt + 1}/{max_retries})")
-                time.sleep(wait_time)
-            else:
-                if attempt < max_retries - 1:
-                    st.warning(f"재시도 중... ({attempt + 1}/{max_retries})")
-                    time.sleep(2)
-    return None
 
 st.title('이순신 장군 챗봇')
 
