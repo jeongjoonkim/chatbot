@@ -80,7 +80,7 @@ if not st.session_state.api_key_configured:
 
     # API 키 생성 링크 추가
     st.markdown("[Google AI Studio에서 API 키 생성하기](https://aistudio.google.com/apikey)")
-    st.stop()  # API 키가 설정되지 않은 경우 여기서 실행 중단
+    st.stop()  # API 키가 설정되지 않�� 경우 여기서 실행 중단
 
 # API 키가 설정된 경우에만 챗봇 실행
 if st.session_state.get('api_key_configured', False):
@@ -110,10 +110,10 @@ if st.session_state.get('api_key_configured', False):
             """
             
             # 응답 길이를 설정하는 부분 추가
-            response = st.session_state.chat_bot.send_message(prompt, stream=False, max_length=max_length)
+            response = st.session_state.chat_bot.send_message(prompt, stream=False)
             
             if response.text:
-                return response.text
+                return response.text[:max_length]  # max_length에 따라 응답 길이 조정
             return None
 
         except Exception as e:
