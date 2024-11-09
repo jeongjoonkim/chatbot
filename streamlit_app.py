@@ -89,7 +89,7 @@ def generate_response_with_retry(persona, character_name, user_input, max_retrie
                     time.sleep(2)
     return None
 
-st.title('이순신 장군 챗봇')
+st.title('이순신 장군 챗봇 feat.도요토미 히데요시')
 
 # API 키 입력 섹션
 if 'api_key_configured' not in st.session_state:
@@ -124,6 +124,25 @@ if st.session_state.get('api_key_configured', False):
 
     st.write('이순신 장군과 대화를 나누어보세요. 가끔 도요토미 히데요시가 끼어들 수 있습니다.')
 
+# 예시 질문 버튼들 추가
+if 'messages' not in st.session_state or len(st.session_state.messages) == 0:
+    st.write("다음 질문들 중 하나를 선택하여 대화를 시작해보세요:")
+    
+    example_questions = [
+        "이순신 장군님, 임진왜란 당시 가장 힘들었던 순간은 언제였나요?",
+        "거북선의 특별한 장점은 무엇인가요?",
+        "장군님께서 후세대에게 전하고 싶은 가장 중요한 교훈은 무엇입니까?",
+        "난중일기를 쓰시게 된 특별한 계기가 있으신가요?",
+        "전쟁 중에 부하들을 어떻게 이끄셨나요?",
+        "명량해전에서 12척의 배로 승리하실 수 있었던 비결이 무엇인가요?"
+    ]
+    
+    cols = st.columns(2)
+    for idx, question in enumerate(example_questions):
+        if cols[idx % 2].button(question):
+            st.session_state.messages.append({"role": "user", "content": question})
+            st.rerun()
+    
     # 채팅 히스토리 표시
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
