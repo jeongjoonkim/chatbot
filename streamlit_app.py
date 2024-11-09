@@ -80,7 +80,7 @@ if not st.session_state.api_key_configured:
 
     # API 키 생성 링크 추가
     st.markdown("[Google AI Studio에서 API 키 생성하기](https://aistudio.google.com/apikey)")
-    st.stop()  # API 키가 설정되지 않�� 경우 여기서 실행 중단
+    st.stop()  # API 키가 설정되지 않은 경우 여기서 실행 중단
 
 # API 키가 설정된 경우에만 챗봇 실행
 if st.session_state.get('api_key_configured', False):
@@ -138,6 +138,15 @@ if st.session_state.get('api_key_configured', False):
                         st.warning(f"재시도 중... ({attempt + 1}/{max_retries})")
                         time.sleep(2)
         return None
+
+    # API 키 재설정 버튼
+    if st.sidebar.button("API 키 재설정"):
+        st.session_state.api_key_configured = False
+        st.session_state.messages = []
+        st.rerun()
+
+    # API 키 생성 링크 추가
+    st.sidebar.markdown("[Google AI Studio에서 API 키 생성하기](https://aistudio.google.com/apikey)")
 
     # 응답 길이 설정 및 샘플 질문 버튼 표시
     col1, col2 = st.columns([1, 2])  # 두 개의 열 생성
@@ -215,12 +224,3 @@ if st.session_state.get('api_key_configured', False):
                 if lee_final_response:
                     st.write(lee_final_response)
                     st.session_state.messages.append({"role": "이순신", "content": lee_final_response})
-
-    # API 키 재설정 버튼
-    if st.sidebar.button("API 키 재설정"):
-        st.session_state.api_key_configured = False
-        st.session_state.messages = []
-        st.rerun()
-
-    # API 키 생성 링크 추가
-    st.sidebar.markdown("[Google AI Studio에서 API 키 생성하기](https://aistudio.google.com/apikey)")
