@@ -70,8 +70,8 @@ with col2:
         "명량해전에서 12척의 배로 승리하실 수 있었던 비결이 무엇인가요?"
     ]
     
-    for question in example_questions:
-        if st.button(question):
+    for idx, question in enumerate(example_questions):
+        if st.button(question, key=f"question_{idx}"):  # 고유한 키 추가
             # 사용자 메시지 추가
             st.session_state.messages.append({"role": "사용자", "content": question})
             
