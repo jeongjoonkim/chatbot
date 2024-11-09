@@ -147,7 +147,7 @@ if st.session_state.get('api_key_configured', False):
         for idx, question in enumerate(example_questions):
             if cols[idx % 2].button(question):
                 # 사용자 메시지 추가
-                st.session_state.messages.append({"role": "user", "content": question})
+                st.session_state.messages.append({"role": "사용자", "content": question})
                 
                 # 이순신 응답 생성
                 lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", question)
@@ -182,9 +182,9 @@ if st.session_state.get('api_key_configured', False):
 
     # 사용자 입력
     if prompt := st.chat_input("메시지를 입력하세요"):
-        with st.chat_message("user"):
+        with st.chat_message("사용자"):
             st.write(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append({"role": "사용자", "content": prompt})
 
         # 이순신 응답
         with st.chat_message("이순신"):
