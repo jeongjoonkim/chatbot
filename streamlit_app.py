@@ -114,17 +114,6 @@ if st.session_state.get('api_key_configured', False):
         "명량해전에서 12척의 배로 승리하실 수 있었던 비결이 무엇인가요?"
     ]
 
-    for idx, question in enumerate(example_questions):
-        if st.sidebar.button(question, key=f"question_{idx}"):  # 고유한 키 추가
-            # 사용자 메시지 추가
-            st.session_state.messages.append({"role": "사용자", "content": question})
-            
-            # 이순신 응답 생성
-            lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", question)
-            if lee_response:
-                st.session_state.messages.append({"role": "이순신", "content": lee_response})
-                st.write(lee_response)
-
     # 응답 길이에 따른 최대 글자 수 설정
     max_length = {
         "짧은 대답 (50자)": 50,
@@ -171,6 +160,17 @@ if st.session_state.get('api_key_configured', False):
                         st.warning(f"재시도 중... ({attempt + 1}/{max_retries})")
                         time.sleep(2)
         return None
+
+    for idx, question in enumerate(example_questions):
+        if st.sidebar.button(question, key=f"question_{idx}"):  # 고유한 키 추가
+            # 사용자 메시지 추가
+            st.session_state.messages.append({"role": "사용자", "content": question})
+            
+            # 이순신 응답 생성
+            lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", question)
+            if lee_response:
+                st.session_state.messages.append({"role": "이순신", "content": lee_response})
+                st.write(lee_response)
 
     # 채팅 히스토리 표시
     for message in st.session_state.messages:
