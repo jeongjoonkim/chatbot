@@ -3,10 +3,6 @@ import google.generativeai as genai
 import random
 import time
 
-# API 키 설정 - .env 파일이나 Streamlit Secrets로 관리하는 것을 추천합니다
-GOOGLE_API_KEY = st.secrets["AIzaSyBwSl1Uf7TGglzOqEwX2t5hX0wFBurNCA4"]  # Streamlit Cloud에서 설정
-genai.configure(api_key=GOOGLE_API_KEY)
-
 # 이순신 장군 페르소나
 lee_sun_shin_persona = """
 당신은 조선 시대의 명장 이순신 장군입니다. 임진왜란 때 활약한 해군 제독으로, 국가와 백성을 지키는 데 헌신했습니다. 조선시대의 격식 있는 말투로 대화하며, 다음 특성을 가집니다:
@@ -54,11 +50,6 @@ safety_settings = [
     }
 ]
 
-# 모델 정의
-model_name = "gemini-1.5-pro"
-model = genai.GenerativeModel(model_name, safety_settings=safety_settings)
-chat_bot = model.start_chat(history=[])
-
 def generate_response(persona, character_name, user_input):
     try:
         prompt = f"""
@@ -70,17 +61,14 @@ def generate_response(persona, character_name, user_input):
         {character_name}으로서 응답해주세요:
         """
 
-        # stream=False로 변경하고 응답 처리 방식 수정
-        response = chat_bot.send_message(prompt, stream=False)
-        print(f"{character_name}: ", end="", flush=True)
-
+        response = st.session_state.chat_bot.send_message(prompt, stream=False)
+        
         if response.text:
-            print(response.text)
             return response.text
         return None
 
     except Exception as e:
-        print(f"오류 발생: {str(e)}")
+        st.error(f"오류 발생: {str(e)}")
         return None
 
 def generate_response_with_retry(persona, character_name, user_input, max_retries=3):
@@ -90,94 +78,95 @@ def generate_response_with_retry(persona, character_name, user_input, max_retrie
             if response is not None:
                 return response
         except Exception as e:
-            print(f"오류 발생: {str(e)}")
+            st.error(f"오류 발생: {str(e)}")
             if "429" in str(e):  # API 할당량 초과 에러
                 wait_time = (attempt + 1) * 5  # 점진적으로 대기 시간 증가
-                print(f"{wait_time}초 후 재시도합니다... ({attempt + 1}/{max_retries})")
+                st.warning(f"{wait_time}초 후 재시도합니다... ({attempt + 1}/{max_retries})")
                 time.sleep(wait_time)
             else:
                 if attempt < max_retries - 1:
-                    print(f"재시도 중... ({attempt + 1}/{max_retries})")
+                    st.warning(f"재시도 중... ({attempt + 1}/{max_retries})")
                     time.sleep(2)
     return None
 
-print("이순신 장군과의 대화를 시작합니다. 가끔 도요토미 히데요시가 끼어들 수 있습니다.")
-print("'대화 종료'라고 입력하면 대화가 종료됩니다.")
-
-while True:
-    user_input = input("나: ")
-
-    if user_input.lower() == "대화 종료":
-        print("이순신: 대화를 종료합니다. 안녕히 가십시오.")
-        break
-
-    lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", user_input)
-    if lee_response is None:
-        print("이순신 장군의 응답을 생성하는데 실패했습니다.")
-        continue
-
-    if random.random() < 0.49:
-        print("\n도요토미 히데요시가 끼어듭니다:")
-        hideyoshi_response = generate_response_with_retry(
-            toyotomi_hideyoshi_persona,
-            "히데요시",
-            f"이순신의 말: {lee_response}\n사용자의 말: {user_input}"
-        )
-
-        if hideyoshi_response:
-            print("\n이순신 장군이 대응합니다:")
-            generate_response_with_retry(
-                lee_sun_shin_persona,
-                "이순신",
-                f"히데요시가 말하길: {hideyoshi_response}"
-            )
-# 세션 상태 초기화
-if 'chat_bot' not in st.session_state:
-    st.session_state.chat_bot = genai.GenerativeModel('gemini-1.5-pro', safety_settings=safety_settings).start_chat(history=[])
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-
 st.title('이순신 장군 챗봇')
-st.write('이순신 장군과 대화를 나누어보세요. 가끔 도요토미 히데요시가 끼어들 수 있습니다.')
 
-# 채팅 히스토리 표시
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+# API 키 입력 섹션
+if 'api_key_configured' not in st.session_state:
+    st.session_state.api_key_configured = False
 
-# 사용자 입력
-if prompt := st.chat_input("메시지를 입력하세요"):
-    # 사용자 메시지 표시
-    with st.chat_message("user"):
-        st.write(prompt)
-    st.session_state.messages.append({"role": "user", "content": prompt})
+if not st.session_state.api_key_configured:
+    st.write("시작하기 전에 Google AI API 키를 입력해주세요.")
+    api_key = st.text_input("Google AI API 키를 입력하세요", type="password")
+    if st.button("API 키 설정"):
+        if api_key:
+            try:
+                genai.configure(api_key=api_key)
+                # 테스트 요청으로 API 키 확인
+                model = genai.GenerativeModel('gemini-1.5-pro')
+                model.generate_content("test")
+                st.session_state.api_key = api_key
+                st.session_state.api_key_configured = True
+                st.success("API 키가 성공적으로 설정되었습니다!")
+                st.experimental_rerun()
+            except Exception as e:
+                st.error(f"API 키 설정 중 오류가 발생했습니다: {str(e)}")
+        else:
+            st.warning("API 키를 입력해주세요.")
 
-    # 이순신 응답
-    with st.chat_message("이순신"):
-        lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", prompt)
-        if lee_response:
-            st.write(lee_response)
-            st.session_state.messages.append({"role": "이순신", "content": lee_response})
+# API 키가 설정된 경우에만 챗봇 실행
+if st.session_state.get('api_key_configured', False):
+    # 챗봇 초기화
+    if 'chat_bot' not in st.session_state:
+        st.session_state.chat_bot = genai.GenerativeModel('gemini-1.5-pro', safety_settings=safety_settings).start_chat(history=[])
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
 
-    # 히데요시 개입 (50% 확률)
-    if random.random() < 0.49:
-        with st.chat_message("히데요시"):
-            hideyoshi_response = generate_response_with_retry(
-                toyotomi_hideyoshi_persona,
-                "히데요시",
-                f"이순신의 말: {lee_response}\n사용자의 말: {prompt}"
-            )
-            if hideyoshi_response:
-                st.write(hideyoshi_response)
-                st.session_state.messages.append({"role": "히데요시", "content": hideyoshi_response})
+    st.write('이순신 장군과 대화를 나누어보세요. 가끔 도요토미 히데요시가 끼어들 수 있습니다.')
 
-        # 이순신의 대응
+    # 채팅 히스토리 표시
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+    # 사용자 입력
+    if prompt := st.chat_input("메시지를 입력하세요"):
+        with st.chat_message("user"):
+            st.write(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # 이순신 응답
         with st.chat_message("이순신"):
-            lee_final_response = generate_response_with_retry(
-                lee_sun_shin_persona,
-                "이순신",
-                f"히데요시가 말하길: {hideyoshi_response}"
-            )
-            if lee_final_response:
-                st.write(lee_final_response)
-                st.session_state.messages.append({"role": "이순신", "content": lee_final_response})
+            lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", prompt)
+            if lee_response:
+                st.write(lee_response)
+                st.session_state.messages.append({"role": "이순신", "content": lee_response})
+
+        # 히데요시 개입 (50% 확률)
+        if random.random() < 0.49:
+            with st.chat_message("히데요시"):
+                hideyoshi_response = generate_response_with_retry(
+                    toyotomi_hideyoshi_persona,
+                    "히데요시",
+                    f"이순신의 말: {lee_response}\n사용자의 말: {prompt}"
+                )
+                if hideyoshi_response:
+                    st.write(hideyoshi_response)
+                    st.session_state.messages.append({"role": "히데요시", "content": hideyoshi_response})
+
+            # 이순신의 대응
+            with st.chat_message("이순신"):
+                lee_final_response = generate_response_with_retry(
+                    lee_sun_shin_persona,
+                    "이순신",
+                    f"히데요시가 말하길: {hideyoshi_response}"
+                )
+                if lee_final_response:
+                    st.write(lee_final_response)
+                    st.session_state.messages.append({"role": "이순신", "content": lee_final_response})
+
+    # API 키 재설정 버튼
+    if st.sidebar.button("API 키 재설정"):
+        st.session_state.api_key_configured = False
+        st.session_state.messages = []
+        st.experimental_rerun()
