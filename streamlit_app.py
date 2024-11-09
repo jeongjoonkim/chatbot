@@ -177,7 +177,15 @@ if st.session_state.get('api_key_configured', False):
 
     # 채팅 히스토리 표시
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
+        role_name = message["role"]
+        # 역할 이름 매핑
+        display_name = {
+            "이순신": "이순신 장군",
+            "히데요시": " 히데요시",
+            "나": "나"
+        }.get(role_name, role_name)
+        
+        with st.chat_message(display_name):
             st.write(message["content"])
 
     # 사용자 입력
