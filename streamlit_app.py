@@ -3,7 +3,8 @@ import google.generativeai as genai
 import random
 import time
 
-hideyoshi_rate = 0.3
+hideyoshi_rate = 0.3 # 히데요시가 끼어드는 비율
+response_length = 150 # 응답 길이. 200이 넘어가면 말이 너무 길어짐
 
 # 이순신 장군 페르소나
 lee_sun_shin_persona = """
@@ -52,25 +53,32 @@ safety_settings = [
     }
 ]
 
+# 응답 길이 설정
+response_length = st.radio("응답 길이를 선택하세요:", ("짧은 대답 (50자)", "보통 대답 (150자)", "긴 대답 (300자)"))
+
+# 응답 길이에 따른 최대 글자 수 설정
+max_length = {
+    "짧은 대답 (50자)": 50,
+    "보통 대답 (150자)": 150,
+    "긴 대답 (300자)": 300
+}.get(response_length, 150)  # 기본값은 150자로 설정
+
 def generate_response(persona, character_name, user_input):
     try:
         prompt = f"""
         {persona}
-
-        대화 맥락:
+        
+        반드시 {max_length}자 이내로 답변해주세요.
+        
         사용자: {user_input}
-
-        {character_name}으로서 응답해주세요:
+        
+        {character_name}으로서 응답:
         """
-
         response = st.session_state.chat_bot.send_message(prompt, stream=False)
         
         if response.text:
-            return response.text
-        return None
-
-    except Exception as e:
-        st.error(f"오류 발생: {str(e)}")
+            # 응답 길이 제한
+            return response.text[:max_length]
         return None
 
 def generate_response_with_retry(persona, character_name, user_input, max_retries=3):
@@ -195,7 +203,7 @@ if st.session_state.get('api_key_configured', False):
         st.session_state.messages.append({"role": "사용자", "content": prompt})
 
         # 이순신 응답
-        with st.chat_message("이순신"):
+        with st.chat_message("이순신 장군"):
             lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", prompt)
             if lee_response:
                 st.write(lee_response)
