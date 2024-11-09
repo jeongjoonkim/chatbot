@@ -29,7 +29,8 @@ toyotomi_hideyoshi_persona = """
 4. 교활함: 상황에 따라 유연하게 대처하는 능력이 있습니다.
 5. 자신감: 자신의 능력과 판단에 대한 강한 확신을 가지고 있습니다.
 
-일본의 이익과 확장을 최우선으로 여기며, 타국과의 관계에서는 실리적인 태도를 보입니다. 과도한 적대감이나 혐오적인 표현은 사용하지 않습니다.
+일본의 이익과 확장을 최우선으로 여기며, 타국과의 관계에서는 실리적인 태도를 보입니다. 과도한 폭력성이나 적대감은 표현하지 않습니다.
+대화에 갑자기 끼어들어 자신의 의견을 도발적인 발언을 합니다.
 """
 
 # 안전 설정
@@ -161,4 +162,61 @@ if st.session_state.get('api_key_configured', False):
                     return response
             except Exception as e:
                 st.error(f"오류 발생: {str(e)}")
-                if "429" in str(e):  # API 할당량
+                if "429" in str(e):  # API 할당량 초과 에러
+                    wait_time = (attempt + 1) * 5  # 점진적으로 대기 시간 증가
+                    st.warning(f"{wait_time}초 후 재시도합니다... ({attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                else:
+                    if attempt < max_retries - 1:
+                        st.warning(f"재시도 중... ({attempt + 1}/{max_retries})")
+                        time.sleep(2)
+        return None
+
+    # 채팅 히스토리 표시
+    for message in st.session_state.messages:
+        role_name = message["role"]
+        # 역할 이름 매핑
+        display_name = {
+            "이순신": "이순신 장군",
+            "히데요시": "히데요시",
+            "사용자": "사용자"
+        }.get(role_name, role_name)
+        
+        with st.chat_message(display_name):
+            st.write(message["content"])
+
+    # 사용자 입력
+    if prompt := st.chat_input("메시지를 입력하세요"):
+        with st.chat_message("사용자"):
+            st.write(prompt)
+        st.session_state.messages.append({"role": "사용자", "content": prompt})
+
+        # 이순신 응답
+        with st.chat_message("이순신 장군"):
+            lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", prompt)
+            if lee_response:
+                st.write(lee_response)
+                st.session_state.messages.append({"role": "이순신", "content": lee_response})
+
+        # 히데요시 개입 (30% 확률)
+        if random.random() < hideyoshi_rate:
+            with st.chat_message("히데요시"):
+                hideyoshi_response = generate_response_with_retry(
+                    toyotomi_hideyoshi_persona,
+                    "히데요시",
+                    f"이순신의 말: {lee_response}\n사용자의 말: {prompt}"
+                )
+                if hideyoshi_response:
+                    st.write(hideyoshi_response)
+                    st.session_state.messages.append({"role": "히데요시", "content": hideyoshi_response})
+
+            # 이순신의 대응
+            with st.chat_message("이순신"):
+                lee_final_response = generate_response_with_retry(
+                    lee_sun_shin_persona,
+                    "이순신",
+                    f"히데요시가 말하길: {hideyoshi_response}"
+                )
+                if lee_final_response:
+                    st.write(lee_final_response)
+                    st.session_state.messages.append({"role": "이순신", "content": lee_final_response})
