@@ -191,9 +191,9 @@ if st.session_state.get('api_key_configured', False):
         role_name = message["role"]
         # 역할 이름 매핑
         display_name = {
-            "이순신": "이순신 장군",
+            "이순신": "이순신",
             "히데요시": "히데요시",
-            "사용자": "사용자"
+            "사용자": "나"
         }.get(role_name, role_name)
         
         with st.chat_message(display_name):
