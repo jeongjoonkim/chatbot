@@ -53,7 +53,7 @@ safety_settings = [
     }
 ]
 
-# 응답 길이 설정 및 샘플 질문 표시
+# 응답 길이 설정 및 샘플 질문 버튼 표시
 col1, col2 = st.columns([1, 2])  # 두 개의 열 생성
 
 with col1:
@@ -69,8 +69,17 @@ with col2:
         "전쟁 중에 부하들을 어떻게 이끄셨나요?",
         "명량해전에서 12척의 배로 승리하실 수 있었던 비결이 무엇인가요?"
     ]
+    
     for question in example_questions:
-        st.write(f"- {question}")
+        if st.button(question):
+            # 사용자 메시지 추가
+            st.session_state.messages.append({"role": "사용자", "content": question})
+            
+            # 이순신 응답 생성
+            lee_response = generate_response_with_retry(lee_sun_shin_persona, "이순신", question)
+            if lee_response:
+                st.session_state.messages.append({"role": "이순신", "content": lee_response})
+                st.write(lee_response)
 
 # 응답 길이에 따른 최대 글자 수 설정
 max_length = {
