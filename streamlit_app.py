@@ -81,6 +81,10 @@ def generate_response(persona, character_name, user_input):
             return response.text[:max_length]
         return None
 
+    except Exception as e:
+        st.error(f"오류 발생: {str(e)}")
+        return None
+
 def generate_response_with_retry(persona, character_name, user_input, max_retries=3):
     for attempt in range(max_retries):
         try:
