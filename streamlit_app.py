@@ -143,7 +143,7 @@ if st.session_state.get('api_key_configured', False):
                 st.session_state.messages.append({"role": "이순신", "content": lee_response})
 
         # 히데요시 개입 (50% 확률)
-        if random.random() < 0.49:
+        if random.random() < 0.3:
             with st.chat_message("히데요시"):
                 hideyoshi_response = generate_response_with_retry(
                     toyotomi_hideyoshi_persona,
